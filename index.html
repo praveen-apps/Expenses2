@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.json">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Budget Tracker Pro</title>
+    <style>
+        /* --- STYLING --- */
+        :root {
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --primary-color: #bb86fc; /* The Purple */
+            --good-color: #4CAF50;
+            --warn-color: #FFC107;
+            --danger-color: #cf6679; /* The Red */
+            --text-color: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* BUDGET BOX - RESTORED THE PURPLE BORDER */
+        .total-box {
+            background: var(--card-color);
+            width: 100%;
+            max-width: 400px;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            
+            /* THIS IS THE PURPLE BORDER YOU LIKED */
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 4px 15px rgba(187, 134, 252, 0.2); /* Purple Glow */
+            
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .total-box:active { transform: scale(0.98); }
+
+        .total-box h1 { margin: 10px 0; font-size: 40px; position: relative; z-index: 2; }
+        .total-box span { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; position: relative; z-index: 2; }
+        .hint { font-size: 10px; color: var(--primary-color); opacity: 0.8; margin-top: 5px; position: relative; z-index: 2; }
+
+        /* PROGRESS BAR */
+        .progress-bg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            width: 100%;
+            background-color: rgba(255,255,255,0.1);
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary-color);
+            transition: width 0.5s ease;
+        }
+
+        /* INPUT AREA */
+        .input-group {
+            background-color: var(--card-color);
+            padding: 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background-color: #2c2c2c;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        /* CATEGORY DROPDOWN ARROW FIX */
+        select {
+            appearance: none; 
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23bb86fc%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+        }
+
+        button#add-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #000;
+        }
+
+        /* LIST ITEMS - RESTORED THE RED STRIPE */
+        .history-list {
+            width: 100%;
+            max-width: 400px;
+            list-style: none;
+            padding: 0;
+            padding-bottom: 60px;
+        }
+
+        .expense-item {
+            background-color: var(--card-color);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            
+            /* THIS IS THE RED STRIPE YOU LIKED */
+            border-left: 5px solid var(--danger-color);
+        }
+
+        .icon-circle {
+            background: #2c2c2c;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 15px;
+        }
+
+        .details { flex-grow: 1; }
+        .details .name { font-weight: bold; font-size: 16px; display: block; }
+        .details .date { font-size: 12px; color: #888; margin-top: 2px; }
+        .amount { font-weight: bold; color: var(--text-color); font-size: 18px; }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #555;
+            font-size: 24px;
+            padding: 0 0 0 15px;
+            cursor: pointer;
+        }
+
+        /* RESET BUTTON */
+        .reset-link {
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+            text-decoration: underline;
+            background: none;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="total-box" onclick="editBudget()">
+        <span>Remaining Budget</span>
+        <h1 id="total-amount">₹0.00</h1>
+        <div class="hint">Tap to set Monthly Budget</div>
+        
+        <div class="progress-bg">
+            <div class="progress-fill" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="desc-input" placeholder="Note (e.g. Burger)">
+        
+        <select id="category-input">
+            <option value="Food">🍔 Food & Drink</option>
+            <option value="Travel">🚕 Travel</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Bills">⚡ Bills</option>
+            <option value="Other">⚪ Other</option>
+        </select>
+
+        <input type="number" id="amount-input" placeholder="Amount (₹)">
+        <button id="add-btn" onclick="addExpense()">Subtract Expense</button>
+    </div>
+
+    <ul class="history-list" id="expense-list"></ul>
+
+    <button class="reset-link" onclick="clearAllData()">Start New Month (Reset)</button>
+
+    <script>
+        // --- LOGIC ---
+        let budget = parseFloat(localStorage.getItem('myBudget')) || 0;
+        let expenses = JSON.parse(localStorage.getItem('myExpenses')) || [];
+        
+        renderApp();
+
+        function editBudget() {
+            let newBudget = prompt("Set Monthly Budget (₹):", budget);
+            if (newBudget) {
+                budget = parseFloat(newBudget);
+                localStorage.setItem('myBudget', budget);
+                renderApp();
+            }
+        }
+
+        function addExpense() {
+            const desc = document.getElementById('desc-input').value;
+            const amount = parseFloat(document.getElementById('amount-input').value);
+            const category = document.getElementById('category-input').value;
+
+            if (desc === '' || isNaN(amount) || amount <= 0) {
+                alert("Please check your inputs!");
+                return;
+            }
+
+            const icons = {
+                "Food": "🍔", "Travel": "🚕", "Shopping": "🛍️", "Bills": "⚡", "Other": "⚪"
+            };
+
+            const expense = {
+                id: Date.now(),
+                desc: desc,
+                amount: amount,
+                category: category,
+                icon: icons[category],
+                date: new Date().toLocaleDateString()
+            };
+
+            expenses.unshift(expense);
+            saveData();
+            
+            document.getElementById('desc-input').value = '';
+            document.getElementById('amount-input').value = '';
+        }
+
+        function deleteExpense(id) {
+            expenses = expenses.filter(item => item.id !== id);
+            saveData();
+        }
+
+        function clearAllData() {
+            if(confirm("Start a new month? This will delete all expenses.")) {
+                expenses = [];
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('myExpenses', JSON.stringify(expenses));
+            renderApp();
+        }
+
+        function renderApp() {
+            const list = document.getElementById('expense-list');
+            const totalDisplay = document.getElementById('total-amount');
+            const progressBar = document.getElementById('progress-bar');
+            
+            list.innerHTML = '';
+            let totalSpent = 0;
+
+            expenses.forEach(expense => {
+                totalSpent += expense.amount;
+
+                const li = document.createElement('li');
+                li.className = 'expense-item';
+                li.innerHTML = `
+                    <div class="icon-circle">${expense.icon}</div>
+                    <div class="details">
+                        <span class="name">${expense.desc}</span>
+                        <span class="date">${expense.category} • ${expense.date}</span>
+                    </div>
+                    <span class="amount">-₹${expense.amount}</span>
+                    <button class="delete-btn" onclick="deleteExpense(${expense.id})">×</button>
+                `;
+                list.appendChild(li);
+            });
+
+            let remaining = budget - totalSpent;
+            totalDisplay.innerText = '₹' + remaining.toFixed(2);
+            
+            // Logic for Colors
+            if (budget > 0) {
+                let percentage = (totalSpent / budget) * 100;
+                progressBar.style.width = Math.min(percentage, 100) + "%";
+
+                if (remaining < 0) {
+                    totalDisplay.style.color = "#cf6679"; // Red if debt
+                    progressBar.style.backgroundColor = "#cf6679";
+                    // Change border to red if debt
+                    document.querySelector('.total-box').style.borderColor = "#cf6679";
+                } else {
+                    totalDisplay.style.color = "#4CAF50"; // Green
+                    progressBar.style.backgroundColor = "#bb86fc"; // Purple bar
+                    // Keep border purple
+                    document.querySelector('.total-box').style.borderColor = "#bb86fc";
+                }
+            }
+        }
+    </script>
+</body>
+</html>
