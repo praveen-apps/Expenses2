@@ -1,6 +1,6 @@
 {
-  "name": "Kishore budget app",
-  "short_name": "Kishore",
+  "name": "Bairus budget app",
+  "short_name": "Bairus",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#121212",
@@ -18,3 +18,4 @@
     }
   ]
 }
+
