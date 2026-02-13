@@ -1,6 +1,6 @@
 {
-  "name": "Bairus budget app",
-  "short_name": "Bairus",
+  "name": "Budget app",
+  "short_name": "Expenses",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#121212",
@@ -18,3 +18,4 @@
     }
   ]
 }
+
